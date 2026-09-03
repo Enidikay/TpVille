@@ -1,16 +1,18 @@
 package fr.diginamic.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 
 import java.util.List;
 
 @Entity
+@Table(name = "departement")
 public class Departement {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    private int code;
+    private String code;
     private String nom;
 
     @JsonIgnore
@@ -28,12 +30,20 @@ public class Departement {
         this.id = id;
     }
 
-    public int getCode() {
+    public String getCode() {
         return code;
     }
 
-    public void setCode(int code) {
+    public void setCode(String code) {
         this.code = code;
+    }
+
+    public List<Ville> getVilles() {
+        return villes;
+    }
+
+    public void setVilles(List<Ville> villes) {
+        this.villes = villes;
     }
 
     public String getNom() {

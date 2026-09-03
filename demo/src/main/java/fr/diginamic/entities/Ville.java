@@ -1,14 +1,16 @@
 package fr.diginamic.entities;
 
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 @Entity
-
+@Table(name = "ville")
 public class Ville {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @NotBlank
@@ -18,13 +20,20 @@ public class Ville {
     @Min(value = 1, message = "la population doit être de minimum de 1 habitant")
     private int population;
 
-    private static int localId = 0;
+    public Departement getDepartement() {
+        return departement;
+    }
 
-    public Ville(String nom, int population) {
-        localId++;
-        this.id = localId;
-        this.nom = nom;
-        this.population = population;
+    public void setDepartement(Departement departement) {
+        this.departement = departement;
+    }
+
+    @ManyToOne
+    @JoinColumn(name = "departement_id")
+    private Departement departement;
+
+
+    public Ville() {
     }
 
     public int getId() {
