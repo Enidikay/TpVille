@@ -1,12 +1,19 @@
 package fr.diginamic.controller;
 
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 import fr.diginamic.entities.Departement;
+import fr.diginamic.entities.Ville;
 import fr.diginamic.exception.ExceptionFonctionnelle;
 import fr.diginamic.services.DepartementService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -82,5 +89,59 @@ public class DepartementController {
         departementService.supprimerDepartement(id);
 
         return ResponseEntity.ok("Département supprimé avec succès");
+    }
+
+    @GetMapping("/{code}/pdf")
+    public void exportPdf(@PathVariable String code, HttpServletResponse response) throws IOException, DocumentException, ExceptionFonctionnelle {
+
+        Departement departement = departementService.extractDepartementCode(code);
+
+        if (departement == null) {
+            throw new ExceptionFonctionnelle("Le département n'existe pas");
+        }
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=\"departement-" + code + ".pdf\"");
+
+        Document document = new Document(PageSize.A4);
+
+        PdfWriter.getInstance(document, response.getOutputStream());
+
+        document.open();
+
+        // Titre
+        Paragraph titre = new Paragraph("Département " + departement.getCode(), new Font(Font.FontFamily.HELVETICA, 22, Font.BOLD));
+        titre.setAlignment(Element.ALIGN_CENTER);
+        document.add(titre);
+        document.add(new Paragraph(" "));
+
+        // Informations du département
+        Paragraph informations = new Paragraph("Informations du département", new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD));
+        document.add(informations);
+        document.add(new Paragraph("Code du département : " + departement.getCode()));
+        document.add(new Paragraph("Nom du département : " + departement.getNom()));
+        document.add(new Paragraph(" "));
+
+        // Liste des villes
+        Paragraph titreVilles = new Paragraph("Liste des villes", new Font(Font.FontFamily.HELVETICA, 14, Font.BOLD));
+        document.add(titreVilles);
+        document.add(new Paragraph(" "));
+
+        PdfPTable table = new PdfPTable(2);
+        table.setWidthPercentage(100);
+
+        // En-têtes
+        table.addCell(new PdfPCell(new Phrase("Ville", new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD))));
+
+        table.addCell(new PdfPCell(new Phrase("Population", new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD))));
+
+        // Villes
+        for (Ville ville : departement.getVilles()) {
+            table.addCell(ville.getNom());
+            table.addCell(String.valueOf(ville.getPopulation()));
+        }
+
+        document.add(table);
+        document.close();
     }
 }
