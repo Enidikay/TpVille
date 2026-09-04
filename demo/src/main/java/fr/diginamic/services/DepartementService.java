@@ -1,20 +1,23 @@
 package fr.diginamic.services;
 
-import fr.diginamic.dao.DepartementDao;
 import fr.diginamic.entities.Departement;
+import fr.diginamic.entities.Ville;
 import fr.diginamic.exception.ExceptionFonctionnelle;
+import fr.diginamic.repository.DepartementRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DepartementService {
 
-    private final DepartementDao departementDao;
+    private final DepartementRepository departementRepository;
 
-    public DepartementService(DepartementDao departementDao) {
-        this.departementDao = departementDao;
+    public DepartementService(DepartementRepository departementRepository) {
+        this.departementRepository = departementRepository;
     }
 
     /**
@@ -23,7 +26,12 @@ public class DepartementService {
      * @return la liste de tous les départements
      */
     public List<Departement> extractDepartements() {
-        return departementDao.extractAll();
+
+        List<Departement> departements = new ArrayList<>();
+
+        departementRepository.findAll().forEach(departements::add);
+
+        return departements;
     }
 
     /**
@@ -34,7 +42,9 @@ public class DepartementService {
      * ou null si aucun département ne correspond
      */
     public Departement extractDepartementId(int id) {
-        return departementDao.findById(id);
+        Optional<Departement> departement = departementRepository.findById(id);
+
+        return departement.orElse(null);
     }
 
     /**
@@ -45,7 +55,11 @@ public class DepartementService {
      * ou null si aucun département ne correspond
      */
     public Departement extractDepartementCode(String code) {
-        return departementDao.findByCode(code);
+
+        Optional<Departement> departement = departementRepository.findByCode(code);
+
+        return departement.orElse(null);
+
     }
 
     /**
@@ -60,13 +74,14 @@ public class DepartementService {
 
         verifierDepartement(departement);
 
-        Departement departementExistant = departementDao.findByCode(departement.getCode());
+        Optional<Departement> departementExistant =
+                departementRepository.findByCode(departement.getCode());
 
-        if (departementExistant != null) {
+        if (departementExistant.isPresent()) {
             throw new ExceptionFonctionnelle("Le département existe déjà");
         }
 
-        departementDao.inserer(departement);
+        departementRepository.save(departement);
     }
 
     /**
@@ -75,8 +90,7 @@ public class DepartementService {
      * @param departement département à vérifier
      * @throws ExceptionFonctionnelle si le code du département est vide ou null
      */
-    private void verifierDepartement(Departement departement)
-            throws ExceptionFonctionnelle {
+    private void verifierDepartement(Departement departement) throws ExceptionFonctionnelle {
 
         if (departement.getCode() == null || departement.getCode().isBlank()) {
             throw new ExceptionFonctionnelle("Le code du département est obligatoire");
@@ -92,13 +106,14 @@ public class DepartementService {
      * ou si les données du département sont invalides
      */
     @Transactional
-    public void modifierDepartement(int id, Departement departementModifie)
-            throws ExceptionFonctionnelle {
+    public void modifierDepartement(int id, Departement departementModifie) throws ExceptionFonctionnelle {
 
-        Departement departement = departementDao.findById(id);
+        Departement departement = extractDepartementId(id);
 
         if (departement == null) {
-            throw new ExceptionFonctionnelle("Le département n'existe pas");
+            throw new ExceptionFonctionnelle(
+                    "Le département n'existe pas"
+            );
         }
 
         verifierDepartement(departementModifie);
@@ -106,7 +121,7 @@ public class DepartementService {
         departement.setCode(departementModifie.getCode());
         departement.setNom(departementModifie.getNom());
 
-        departementDao.modifier(departement);
+        departementRepository.save(departement);
     }
 
     /**
@@ -116,15 +131,14 @@ public class DepartementService {
      * @throws ExceptionFonctionnelle si aucun département ne correspond à l'identifiant
      */
     @Transactional
-    public void supprimerDepartement(int id)
-            throws ExceptionFonctionnelle {
+    public void supprimerDepartement(int id) throws ExceptionFonctionnelle {
 
-        Departement departement = departementDao.findById(id);
+        Departement departement = extractDepartementId(id);
 
         if (departement == null) {
             throw new ExceptionFonctionnelle("Le département n'existe pas");
         }
 
-        departementDao.delete(departement);
+        departementRepository.delete(departement);
     }
 }

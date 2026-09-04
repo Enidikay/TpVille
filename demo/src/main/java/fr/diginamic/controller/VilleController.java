@@ -5,12 +5,14 @@ import fr.diginamic.entities.Ville;
 import fr.diginamic.exception.ExceptionFonctionnelle;
 import fr.diginamic.mapper.VilleMapper;
 import fr.diginamic.services.VilleService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -195,4 +197,38 @@ public class VilleController {
 
         return dtos;
     }
+
+    /**
+     * Récupère les villes à partir d'un min donné et les regroupe dans un fichier csv
+     * @param min population minimale
+     * @param response fichier vierge à éditer dans la méthode
+     * @throws IOException si l'opération a échoué
+     * @throws ExceptionFonctionnelle si on n'arrive pas à extraire les données des villes
+     */
+    @GetMapping("/export/csv")
+    public void ficheVille( @RequestParam int min, HttpServletResponse response) throws IOException, ExceptionFonctionnelle {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"villes.csv\"");
+
+        List<Ville> villes = villeService.extractVilles(min);
+
+        //le writer sert à écrire dans le document
+        PrintWriter writer = response.getWriter();
+
+        writer.println("Nom;Population;Code departement;Nom departement");
+
+        for (Ville ville : villes) {
+            writer.println(ville.getNom() + ";" + ville.getPopulation() + ";" + ville.getDepartement().getCode() + ";" + ville.getDepartement().getNom());
+        }
+
+        writer.flush();
+    }
+
+
+
+
+
+
+
+
 }

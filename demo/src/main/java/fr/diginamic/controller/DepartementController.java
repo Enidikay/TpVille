@@ -52,9 +52,7 @@ public class DepartementController {
 
         departementService.insertDepartement(departement);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body("Département inséré avec succès");
+        return ResponseEntity.status(HttpStatus.OK).body("Département inséré avec succès");
     }
 
     /**
@@ -79,9 +77,7 @@ public class DepartementController {
      * @throws ExceptionFonctionnelle si aucun département ne correspond à l'identifiant fourni
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> supprimerDepartement(
-            @PathVariable int id)
-            throws ExceptionFonctionnelle {
+    public ResponseEntity<String> supprimerDepartement(@PathVariable int id) throws ExceptionFonctionnelle {
 
         departementService.supprimerDepartement(id);
 

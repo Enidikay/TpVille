@@ -1,24 +1,25 @@
 package fr.diginamic.services;
 
-import fr.diginamic.dao.VilleDao;
 import fr.diginamic.entities.Departement;
 import fr.diginamic.entities.Ville;
 import fr.diginamic.exception.ExceptionFonctionnelle;
+import fr.diginamic.repository.VilleRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import fr.diginamic.dao.DepartementDao;
-import fr.diginamic.services.DepartementService;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VilleService {
 
-    private final VilleDao villeDao;
+    private final VilleRepository villeRepository;
     private final DepartementService departementService;
 
-    public VilleService(VilleDao villeDao, DepartementService departementService) {
-        this.villeDao = villeDao;
+    public VilleService(VilleRepository villeRepository, DepartementService departementService) {
+        this.villeRepository = villeRepository;
         this.departementService = departementService;
     }
 
@@ -27,7 +28,9 @@ public class VilleService {
      * @return la liste de toutes les villes disponibles
      */
     public List<Ville> extractVilles() {
-        return villeDao.extractAll();
+        List<Ville> villes = new ArrayList<>();
+        villeRepository.findAll().forEach(villes::add);
+        return villes;
     }
 
     /**
@@ -38,13 +41,13 @@ public class VilleService {
      */
     public Ville extractVille(int idVille) throws ExceptionFonctionnelle {
 
-        Ville ville = villeDao.findById(idVille);
+        Optional<Ville> ville = villeRepository.findById(idVille);
 
-        if (ville == null) {
+        if (ville.isEmpty()) {
             throw new ExceptionFonctionnelle("La ville n'existe pas");
         }
 
-        return ville;
+        return ville.get();
     }
 
     /**
@@ -54,16 +57,13 @@ public class VilleService {
      * @throws ExceptionFonctionnelle si aucune ville ne correspond au suffixe fourni
      */
     public List<Ville> extractVilles(String suffixe) throws ExceptionFonctionnelle {
+        List<Ville> villes = villeRepository.findByNomStartingWith(suffixe);
 
-        List<Ville> suffixeTrouve = villeDao.rechercheNameSuffixe(suffixe);
-
-        if (suffixeTrouve.isEmpty()) {
-            throw new ExceptionFonctionnelle(
-                    "Aucune ville avec le suffixe " + suffixe + " n'a été trouvée"
-            );
+        if (villes.isEmpty()) {
+            throw new ExceptionFonctionnelle("Aucune ville avec le suffixe " + suffixe + " n'a été trouvée");
         }
 
-        return suffixeTrouve;
+        return villes;
     }
 
     /**
@@ -103,7 +103,7 @@ public class VilleService {
 
         ville.setDepartement(departement);
 
-        List<Ville> villes = villeDao.extractAll();
+        List<Ville> villes = extractVilles();
 
         for (Ville v : villes) {
             if (v.getNom().equalsIgnoreCase(ville.getNom())) {
@@ -111,7 +111,7 @@ public class VilleService {
             }
         }
 
-        villeDao.inserer(ville);
+        villeRepository.save(ville);
     }
 
     /**
@@ -129,8 +129,7 @@ public class VilleService {
         ville.setNom(villeModifiee.getNom());
         ville.setPopulation(villeModifiee.getPopulation());
 
-        villeDao.modifier(ville);
-        villeDao.extractAll();
+        villeRepository.save(ville);
     }
 
     /**
@@ -142,9 +141,7 @@ public class VilleService {
     @Transactional
     public void supprimerVille(int idVille) throws ExceptionFonctionnelle {
         Ville ville = extractVille(idVille);
-        villeDao.delete(ville);
-
-        villeDao.extractAll();
+        villeRepository.delete(ville);
     }
 
     /**
@@ -155,7 +152,7 @@ public class VilleService {
      */
     public List<Ville> extractVilles(int min) throws ExceptionFonctionnelle {
 
-        List<Ville> villesTrouves = villeDao.rechercherPopulationMin(min);
+        List<Ville> villesTrouves = villeRepository.findByPopulationGreaterThanOrderByPopulationDesc(min);
 
         if (villesTrouves.isEmpty()) {
             throw new ExceptionFonctionnelle("Aucune ville n'a une population supérieure à " + min);
@@ -173,12 +170,10 @@ public class VilleService {
      */
     public List<Ville> extractVilles(int min, int max) throws ExceptionFonctionnelle {
 
-        List<Ville> villesTrouves = villeDao.rechercherPopulationMinMax(min, max);
+        List<Ville> villesTrouves = villeRepository.findByPopulationBetweenOrderByPopulationDesc(min, max);
 
         if (villesTrouves.isEmpty()) {
-            throw new ExceptionFonctionnelle(
-                    "Aucune ville n'a une population comprise entre " + min + " et " + max
-            );
+            throw new ExceptionFonctionnelle("Aucune ville n'a une population comprise entre " + min + " et " + max);
         }
 
         return villesTrouves;
@@ -202,7 +197,7 @@ public class VilleService {
 
     public List<Ville> extractPlusGrandesVilles(int idDepartement, int n) throws ExceptionFonctionnelle {
 
-        List<Ville> villes = villeDao.rechercherPlusGrandesVilles(idDepartement, n);
+        List<Ville> villes = villeRepository.findByDepartement(idDepartement, PageRequest.of(0, n));
 
         if (villes.isEmpty()) {
             throw new ExceptionFonctionnelle("Aucune ville trouvée pour ce département");
@@ -213,7 +208,7 @@ public class VilleService {
 
     public List<Ville> extractVilles(int min, int max, int idDepartement) throws ExceptionFonctionnelle {
 
-        List<Ville> villes = villeDao.rechercherPopulationMinMaxDepartement(min, max, idDepartement);
+        List<Ville> villes = villeRepository.findByDepartementIdAndPopulationGreaterThanAndPopulationLessThanOrderByPopulationDesc(idDepartement,min,max);
 
         if (villes.isEmpty()) {
             throw new ExceptionFonctionnelle("Aucune ville ne correspond aux critères");
