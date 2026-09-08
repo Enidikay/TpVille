@@ -1,11 +1,19 @@
 package fr.diginamic.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.diginamic.dto.ApiDepartementDto;
 import fr.diginamic.entities.Departement;
 import fr.diginamic.entities.Ville;
 import fr.diginamic.exception.ExceptionFonctionnelle;
 import fr.diginamic.repository.DepartementRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +23,10 @@ import java.util.Optional;
 public class DepartementService {
 
     private final DepartementRepository departementRepository;
+
+    @Value("${application.init}")
+    private boolean init;
+
 
     public DepartementService(DepartementRepository departementRepository) {
         this.departementRepository = departementRepository;
@@ -141,4 +153,33 @@ public class DepartementService {
 
         departementRepository.delete(departement);
     }
+
+
+    @PostConstruct
+    public void initData() {
+
+        if (!init) {
+            return;
+        }
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<ApiDepartementDto[]> response = restTemplate.getForEntity("https://geo.api.gouv.fr/departements", ApiDepartementDto[].class);
+
+        ApiDepartementDto[] departements = response.getBody();
+
+        for (ApiDepartementDto departementDto : departements) {
+
+            String code = departementDto.getCode();
+            String nom = departementDto.getNom();
+
+            Departement departement = extractDepartementCode(code);
+
+            if (departement != null) {
+                departement.setNom(nom);
+                departementRepository.save(departement);
+            }
+        }
+    }
+
+
 }

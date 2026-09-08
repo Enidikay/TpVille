@@ -1,5 +1,6 @@
 package fr.diginamic;
 
+import fr.diginamic.services.DepartementService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
