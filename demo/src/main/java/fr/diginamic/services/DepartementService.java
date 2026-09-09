@@ -24,8 +24,8 @@ public class DepartementService {
 
     private final DepartementRepository departementRepository;
 
-    @Value("${application.init}")
-    private boolean init;
+   @Value("${application.init}")
+   private boolean init;
 
 
     public DepartementService(DepartementRepository departementRepository) {
@@ -154,7 +154,6 @@ public class DepartementService {
         departementRepository.delete(departement);
     }
 
-
     @PostConstruct
     public void initData() {
 
@@ -180,6 +179,5 @@ public class DepartementService {
             }
         }
     }
-
 
 }
